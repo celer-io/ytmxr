@@ -1,0 +1,17 @@
+{
+  "name": "ytmxr",
+  "version": "1.0.0",
+  "description": "a webapp for playing multiple youtube videos at once while having every videos controls in a nice centralised UI",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "youtube",
+    "dj",
+    "mixer",
+    "corssfading"
+  ],
+  "author": "crucialhawg",
+  "license": "GPL-3.0"
+}
