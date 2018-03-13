@@ -8,7 +8,8 @@
   <body>
     <!-- <div id="player"></div> -->
     <div id="controls">
-      <button type="button" name="button" onclick="openAnother()">Click</button>
+      <button type="button" name="button" onclick="openAnother(this)">Click</button>
+      <input type="number" name="volume" value="10" min="0" max="100" onclick="onVolumeChange()">
     </div>
     <div id="players">
 

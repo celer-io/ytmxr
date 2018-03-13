@@ -12,46 +12,54 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
 //    after the API code downloads.
 var players = []
 function onYouTubeIframeAPIReady () {
-  var playersEl = document.getElementById('players')
-  var newPLayerName = 'player' + players.length
-  var playerDiv = document.createElement('div')
-  playerDiv.id = newPLayerName
-  playersEl.appendChild(playerDiv)
   console.log('YT :', YT)
-  players.push(new YT.Player(newPLayerName, {
-    height: '200',
-    width: '200',
-    videoId: 'M7lc1UVf-VE',
-    events: {
-      'onReady': onPlayerReady,
-      'onStateChange': onPlayerStateChange
-    }
-  }))
+  addPlayer('76c0LIXn_P0')
 }
 
-function openAnother () {
-  console.log('openAnother :')
-  var playersEl = document.getElementById('players')
-  var newPLayerName = 'player' + players.length
-  var playerDiv = document.createElement('div')
-  playerDiv.id = newPLayerName
-  playersEl.appendChild(playerDiv)
-  console.log('YT :', YT)
-  players.push(new YT.Player(newPLayerName, {
-    height: '200',
-    width: '200',
-    videoId: '76c0LIXn_P0',
+function createPlayerNode (videoId) {
+  var playerNode = document.createElement('div')
+  playerNode.id = 'player' + videoId
+  return playerNode
+}
+
+function addPlayer (videoId) {
+  var newPlayer = {
+    videoId: videoId,
+    ytInstance: null,
+    element: createPlayerNode(videoId)
+  }
+  document.getElementById('players').appendChild(newPlayer.element)
+  newPlayer.ytInstance = new YT.Player('player' + videoId, {
+    height: '80',
+    width: '600',
+    videoId: videoId,
     events: {
       'onReady': onPlayerReady,
       'onStateChange': onPlayerStateChange
+    },
+    playerVars: {
+      modestbranding: 0,
+      rel: 0
     }
-  }))
+  })
+  players.push(newPlayer)
+}
+
+var exampleVideos = ['76c0LIXn_P0', 'oIa4mUM9Rjw', 'qd2Dx6MIvb0', '2YjQlLg6bUM']
+function openAnother () {
+  var rand = Math.floor(Math.random() * exampleVideos.length)
+  addPlayer(exampleVideos[rand])
+}
+
+function onVolumeChange () {
+  var newValue = 50
+  var videoId = '76c0LIXn_P0'
+  var player = players.find((player) => player.videoId === videoId)
+  player.ytInstance.setVolume(newValue)
 }
 
 // 4. The API will call this function when the video player is ready.
 function onPlayerReady (event) {
-  console.log('onPlayerReady :')
-  console.log('event :', event)
   event.target.playVideo()
 }
 
@@ -60,8 +68,6 @@ function onPlayerReady (event) {
 //    the player should play for six seconds and then stop.
 // var done = false
 function onPlayerStateChange (event) {
-  console.log('onPlayerStateChange :')
-  console.log('event :', event)
   // if (event.data === YT.PlayerState.PLAYING && !done) {
   //   setTimeout(stopVideo, 6000)
   //   done = true
