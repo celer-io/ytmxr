@@ -17,12 +17,13 @@
   "author": "crucialhawg",
   "license": "GPL-3.0",
   "dependencies": {
+    "ramda": "^0.25.0",
     "snabbdom": "^0.7.1"
   },
   "devDependencies": {
-  "babel": "^5.2.13",
-  "babelify": "^6.0.2",
-  "browserify": "^11.0.0",
-  "watchify": "^3.3.0"
+    "babel": "^5.2.13",
+    "babelify": "^6.0.2",
+    "browserify": "^11.0.0",
+    "watchify": "^3.3.0"
   }
 }
