@@ -1,17 +1,29 @@
 /* global YT */
-/* exported onYouTubeIframeAPIReady */
+var snabbdom = require('snabbdom')
+const R = require('ramda')
+var patch = snabbdom.init([ // Init patch function with chosen modules
+  require('snabbdom/modules/class').default, // makes it easy to toggle classes
+  require('snabbdom/modules/props').default, // for setting properties on DOM elements
+  require('snabbdom/modules/style').default, // handles styling on elements with support for animations
+  require('snabbdom/modules/eventlisteners').default // attaches event listeners
+])
+var h = require('snabbdom/h').default // helper function for creating vnodes
+// var toVNode = require('snabbdom/tovnode').default
+var container = document.getElementById('container')
 
-// 2. This code loads the IFrame Player API code asynchronously.
-var tag = document.createElement('script')
-
-tag.src = 'https://www.youtube.com/iframe_api'
-var firstScriptTag = document.getElementsByTagName('script')[0]
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
+var vnode = h('div#container.two.classes', {on: {click: () => console.log('wesh')}}, [
+  h('span', {style: {fontWeight: 'bold'}}, 'This is bold'),
+  ' and this is just normal text',
+  h('a', {props: {href: '/foo'}}, 'I\'ll take you places!')
+])
+// Patch into empty DOM element – this modifies the DOM as a side effect
+// patch(toVNode(container), vnode)
+patch(container, vnode)
 
 // 3. This function creates an <iframe> (and YouTube player)
 //    after the API code downloads.
 var players = []
-function onYouTubeIframeAPIReady () {
+global.onYouTubeIframeAPIReady = function () {
   console.log('YT :', YT)
   addPlayer('76c0LIXn_P0')
 }
@@ -46,12 +58,12 @@ function addPlayer (videoId) {
 }
 
 var exampleVideos = ['76c0LIXn_P0', 'oIa4mUM9Rjw', 'qd2Dx6MIvb0', '2YjQlLg6bUM']
-function openAnother () {
+global.openAnother = () => {
   var rand = Math.floor(Math.random() * exampleVideos.length)
   addPlayer(exampleVideos[rand])
 }
 
-function onVolumeChange () {
+global.onVolumeChange = () => {
   var newValue = 50
   var videoId = '76c0LIXn_P0'
   var player = players.find((player) => player.videoId === videoId)
