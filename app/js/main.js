@@ -8,7 +8,7 @@ var patch = snabbdom.init([ // Init patch function with chosen modules
   require('snabbdom/modules/eventlisteners').default // attaches event listeners
 ])
 var h = require('snabbdom/h').default // helper function for creating vnodes
-const track = require('./track')
+const Track = require('./track')
 
 var container = document.getElementById('container')
 
@@ -28,35 +28,20 @@ const model = {
 }
 
 global.onYouTubeIframeAPIReady = () => {
-  addPlayer('76c0LIXn_P0')
+  addTrack('76c0LIXn_P0')
 }
 
-function addPlayer (videoId) {
-  model.tracks.push(track.init(videoId, 'player' + model.nextId))
+function addTrack (videoId) {
+  // TODO: make those updates with ramda ?
+  model.tracks.push(Track.init(videoId, 'player' + model.nextId))
   model.nextId++
-  var newvNode = h(
-    'div#container.container',
-    [
-      h('div#controls', [
-        h('input', {
-          props: {
-            placeholder: 'Enter a Youtube Id',
-            value: model.newVideoId
-          },
-          on: {input: e => { model.newVideoId = e.target.value }}
-        }),
-        h('button', {on: {click: () => addPlayer(model.newVideoId)}}, 'Go'),
-        h('button', {on: {click: openRandom}}, 'Rand')
-      ]),
-      h('div#tracks', R.map(p => p.vnode, model.tracks))
-    ]
-  )
-  patch(vnode, newvNode)
-  vnode = newvNode // Need statefull FRP shit ?
+
+  view(model)
+
   var newTrack = R.last(model.tracks)
-  newTrack.ytInstance = new YT.Player(newTrack.vnode.key, {
-    height: '80',
-    width: '600',
+  newTrack.ytInstance = new YT.Player(newTrack.key, {
+    height: '96',
+    width: '96',
     videoId: videoId,
     events: {
       'onReady': onPlayerReady,
@@ -69,37 +54,46 @@ function addPlayer (videoId) {
   })
 }
 
+const view = model => {
+  console.log('Et on redessine!!')
+  var newvNode = h(
+    'div#container.container',
+    [
+      h('div#controls', [
+        h('input', {
+          props: {
+            placeholder: 'Enter a Youtube Id',
+            value: model.newVideoId
+          },
+          on: {input: e => { model.newVideoId = e.target.value }} // TODO: make this update with ramda ?
+        }),
+        h('button', {on: {click: () => addTrack(model.newVideoId)}}, 'Go'),
+        h('button', {on: {click: openRandom}}, 'Rand')
+      ]),
+      h('div#tracks', R.map(t => Track.view(t), model.tracks))
+    ]
+  )
+  patch(vnode, newvNode)
+  vnode = newvNode // Need statefull FRP shit ?
+}
+
 var exampleVideos = ['76c0LIXn_P0', 'oIa4mUM9Rjw', 'qd2Dx6MIvb0', '2YjQlLg6bUM']
 const openRandom = () => {
   var rand = Math.floor(Math.random() * exampleVideos.length)
-  addPlayer(exampleVideos[rand])
+  addTrack(exampleVideos[rand])
 }
 
-// global.onVolumeChange = () => {
-//   var newValue = 50
-//   var videoId = '76c0LIXn_P0'
-//   var player = players.find((player) => player.videoId === videoId)
-//   player.ytInstance.setVolume(newValue)
-// }
-
-// 4. The API will call this function when the video player is ready.
+// ytapi handles
 function onPlayerReady (event) {
   event.target.playVideo()
 }
 
-// 5. The API calls this function when the player's state changes.
-//    The function indicates that when playing a video (state=1),
-//    the player should play for six seconds and then stop.
-// var done = false
 function onPlayerStateChange (event) {
-  console.log('event :', event)
-  // console.log('event.data :', event.data)
-  // console.log('YT.PlayerState :', YT.PlayerState)
-  // if (event.data === YT.PlayerState.PLAYING && !done) {
-  //   setTimeout(stopVideo, 6000)
-  //   done = true
-  // }
+  var track = R.find(R.propEq('key', event.target.a.id), model.tracks)
+  track.playerState = event.data // Oulah grosse mutation !!!
+  view(model)
 }
+
 // function stopVideo () {
 //   players[0].stopVideo()
 // }
