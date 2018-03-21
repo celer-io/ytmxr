@@ -8,7 +8,8 @@ var patch = snabbdom.init([ // Init patch function with chosen modules
   require('snabbdom/modules/eventlisteners').default // attaches event listeners
 ])
 var h = require('snabbdom/h').default // helper function for creating vnodes
-// var toVNode = require('snabbdom/tovnode').default
+const track = require('./track')
+
 var container = document.getElementById('container')
 
 var vnode = h('div#container.two.classes', {on: {click: () => console.log('wesh')}}, [
@@ -20,24 +21,19 @@ var vnode = h('div#container.two.classes', {on: {click: () => console.log('wesh'
 // patch(toVNode(container), vnode)
 patch(container, vnode)
 
-var players = []
-var newVideoId = ''
+const model = {
+  tracks: [],
+  nextId: 0,
+  newVideoId: ''
+}
 
 global.onYouTubeIframeAPIReady = () => {
   addPlayer('76c0LIXn_P0')
 }
 
-const initTrack = (videoId, key) => ({
-  videoId: videoId,
-  ytInstance: null,
-  vnode: h('div.track', {key: key}, [
-    videoId,
-    h('div#' + key)
-  ])
-})
-
 function addPlayer (videoId) {
-  players.push(initTrack(videoId, 'player' + players.length))
+  model.tracks.push(track.init(videoId, 'player' + model.nextId))
+  model.nextId++
   var newvNode = h(
     'div#container.container.two.classes',
     [
@@ -45,19 +41,19 @@ function addPlayer (videoId) {
         h('input', {
           props: {
             placeholder: 'Enter a Youtube Id',
-            value: newVideoId
+            value: model.newVideoId
           },
-          on: {input: e => { newVideoId = e.target.value }}
+          on: {input: e => { model.newVideoId = e.target.value }}
         }),
-        h('button', {on: {click: () => addPlayer(newVideoId)}}, 'Go'),
+        h('button', {on: {click: () => addPlayer(model.newVideoId)}}, 'Go'),
         h('button', {on: {click: openRandom}}, 'Rand')
       ]),
-      h('div#tracks', R.map(p => p.vnode, players))
+      h('div#tracks', R.map(p => p.vnode, model.tracks))
     ]
   )
   patch(vnode, newvNode)
   vnode = newvNode // Need statefull FRP shit ?
-  var newTrack = R.last(players)
+  var newTrack = R.last(model.tracks)
   newTrack.ytInstance = new YT.Player(newTrack.vnode.key, {
     height: '80',
     width: '600',
@@ -96,6 +92,7 @@ function onPlayerReady (event) {
 //    the player should play for six seconds and then stop.
 // var done = false
 function onPlayerStateChange (event) {
+  console.log('event :', event)
   // console.log('event.data :', event.data)
   // console.log('YT.PlayerState :', YT.PlayerState)
   // if (event.data === YT.PlayerState.PLAYING && !done) {
