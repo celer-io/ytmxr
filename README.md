@@ -11,6 +11,7 @@ A webapp for playing multiple youtube videos at once while having every videos c
 - [X] Integrate ramda and snabbdom
 - [ ] Integrate bulma
 - [ ] Make basic functional frontend app
+- [ ] Make Header component
 - [ ] Make Track component
 - [ ] Find and itegrate silders UI ([like this](https://github.com/Wikiki/bulma-slider) ?)
 <!-- - [ ] Design UI (mockups ?) -->
