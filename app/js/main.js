@@ -35,7 +35,7 @@ function addPlayer (videoId) {
   model.tracks.push(track.init(videoId, 'player' + model.nextId))
   model.nextId++
   var newvNode = h(
-    'div#container.container.two.classes',
+    'div#container.container',
     [
       h('div#controls', [
         h('input', {

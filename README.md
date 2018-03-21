@@ -9,7 +9,7 @@ A webapp for playing multiple youtube videos at once while having every videos c
 - [X] Externalise js code
 - [X] ~~Control~~ Change volume on click
 - [X] Integrate ramda and snabbdom
-- [ ] Integrate bulma
+- [X] Integrate bulma
 - [ ] Make basic functional frontend app
 - [ ] Make Header component
 - [ ] Make Track component
