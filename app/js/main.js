@@ -10,22 +10,21 @@ var patch = snabbdom.init([ // Init patch function with chosen modules
 var h = require('snabbdom/h').default // helper function for creating vnodes
 const Track = require('./track')
 
-var container = document.getElementById('container')
-
-var vnode = h('div#container.two.classes', {on: {click: () => console.log('wesh')}}, [
-  h('span', {style: {fontWeight: 'bold'}}, 'This is bold'),
-  ' and this is just normal text',
-  h('a', {props: {href: '/foo'}}, 'I\'ll take you places!')
-])
-// Patch into empty DOM element – this modifies the DOM as a side effect
-// patch(toVNode(container), vnode)
-patch(container, vnode)
-
 const model = {
   tracks: [],
   nextId: 0,
   newVideoId: ''
 }
+
+var vnode = h('section#app.hero.is-large.is-light', [
+  h('div.hero-body', [
+    h('div.container', [
+      h('h1.title', 'YTMXR'),
+      h('h2.subtitle', 'Youtube api not loaded yet...')
+    ])
+  ])
+])
+patch(document.getElementById('app'), vnode)
 
 global.onYouTubeIframeAPIReady = () => {
   addTrack('76c0LIXn_P0')
@@ -55,24 +54,39 @@ function addTrack (videoId) {
 }
 
 const view = model => {
-  console.log('Et on redessine!!')
-  var newvNode = h(
-    'div#container.container',
-    [
-      h('div#controls', [
-        h('input', {
-          props: {
-            placeholder: 'Enter a Youtube Id',
-            value: model.newVideoId
-          },
-          on: {input: e => { model.newVideoId = e.target.value }} // TODO: make this update with ramda ?
-        }),
-        h('button', {on: {click: () => addTrack(model.newVideoId)}}, 'Go'),
-        h('button', {on: {click: openRandom}}, 'Rand')
-      ]),
-      h('div#tracks', R.map(t => Track.view(t), model.tracks))
-    ]
-  )
+  var newvNode = h('div#app', [
+    h('nav.navbar.is-light.is-fixed-top', [
+      h('div.container', [
+        h('div.navbar-brand', [
+          h('div.navbar-item.title.is-4', 'YTMXR')
+        ]),
+        h('div.navbar-menu.is-active', [
+          h('div.navbar-left', [
+            h('div.navbar-item', [
+              h('div.field.is-grouped', [
+                h('p.control.is-expanded', [
+                  h('input.input', {
+                    props: {type: 'text', placeholder: 'Enter a Youtube Id', value: model.newVideoId},
+                    on: {input: e => { model.newVideoId = e.target.value }} // TODO: make this update with ramda ?
+                  })
+                ]),
+                h('p.control', [
+                  h('button.button', {on: {click: () => addTrack(model.newVideoId)}}, 'Go')
+                ]),
+                h('p.control', [
+                  h('button.button', {on: {click: openRandom}}, 'Rand')
+                ])
+              ])
+            ])
+          ])
+        ])
+      ])
+    ]),
+    h('section.section', [
+      h('div.container', R.map(t => Track.view(t), model.tracks))
+    ])
+  ]
+)
   patch(vnode, newvNode)
   vnode = newvNode // Need statefull FRP shit ?
 }
