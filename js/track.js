@@ -1,3 +1,4 @@
+/* global CustomEvent */
 // const R = require('ramda')
 const h = require('snabbdom/h').default
 
@@ -6,26 +7,25 @@ const init = (videoId, key) => ({
   videoId: videoId,
   playerState: -1,
   ytInstance: null,
-  record: null,
-  recording: false
+  record: {
+    start: null,
+    end: null
+  },
+  recording: false,
+  loopInterval: null
 })
 
 // h('i.fas.fa-x2.fa-play-circle')
 const view = model => h('div.box', {key: model.key}, [
   h('article.media', [
     h('div.media-left', [
-      h('figure#' + model.key + '.image.is-96x96')
+      h('figure#' + model.key)
     ]),
     h('div.media-content', [
-      h('div.field.is-grouped', [
+      h('div.field.is-grouped.is-grouped-multiline', [
         h('p.control', [
           h('button.button.is-large', {on: {click: () => stepBackward(model)}}, [
             h('span.icon.is-medium', h('i.fas.fa-x2.fa-step-backward'))
-          ])
-        ]),
-        h('p.control', [
-          h('button.button.is-large', {on: {click: () => fastBackward(model)}}, [
-            h('span.icon.is-medium', h('i.fas.fa-x2.fa-fast-backward'))
           ])
         ]),
         h('p.control', [
@@ -34,42 +34,42 @@ const view = model => h('div.box', {key: model.key}, [
           ])
         ]),
         h('p.control', [
-          h('button.button.is-large', {on: {click: () => stop(model)}}, [
-            h('span.icon.is-medium', h('i.fas.fa-x2.fa-stop'))
+          h('button.button.is-large', {on: {click: () => stepForward(model)}}, [
+            h('span.icon.is-medium', h('i.fas.fa-x2.fa-step-forward'))
           ])
         ]),
         h('p.control', [
           h('button.button.is-large', {on: {click: () => rec(model)}}, [
-            h('span.icon.is-medium.has-text-danger', h('i.fas.fa-x2.fa-circle'))
+            h('span.icon.is-medium.has-text-danger', h('i.fas.fa-x2.fa-circle', {class: {'fa-blink': model.recording}}))
           ])
         ]),
         h('p.control', [
-          h('button.button.is-large', {on: {click: () => playLoop(model)}}, [
-            h('span.icon.is-medium', h('i.fas.fa-x2.fa-redo'))
-          ])
-        ]),
-        h('p.control', [
-          h('button.button.is-large', {on: {click: () => fastForward(model)}}, [
-            h('span.icon.is-medium', h('i.fas.fa-x2.fa-fast-forward'))
-          ])
-        ]),
-        h('p.control', [
-          h('button.button.is-large', {on: {click: () => stepForward(model)}}, [
-            h('span.icon.is-medium', h('i.fas.fa-x2.fa-step-forward'))
+          h('button.button.is-large', {props: {disabled: !hasLoop(model)}, on: {click: () => toggleLoop(model)}}, [
+            h('span.icon.is-medium', h('i.fas.fa-x2.fa-redo', {class: {'fa-pulse': model.loopInterval}}))
           ])
         ])
       ]),
-      h('div.field', [
+      h('div.field.level.has-addons', [
         h('p.control', [
-          h('input.slider.is-fullwidth.is-large.is-warning', {
+          h('span.icon.is-large', [
+            h('i.fas.fa-lg.fa-volume-down')
+          ])
+        ]),
+        h('p.control.is-expanded', [
+          h('input.slider.is-fullwidth.is-medium.is-circle', {
             props: {step: 1, min: 0, max: 100, value: 50, type: 'range'},
             on: {input: e => setVolume(model, e.target.value)}
           })
+        ]),
+        h('p.control', [
+          h('span.icon.is-large', [
+            h('i.fas.fa-lg.fa-volume-up')
+          ])
         ])
       ])
     ]),
     h('div.media-right', [
-      h('button.delete', {on: {click: () => console.log('model :', model)}})
+      h('button.delete', {on: {click: () => deleteTrack(model)}})
     ])
   ])
 ])
@@ -103,32 +103,30 @@ const rec = model => {
     model.recording = false
     model.record.end = model.ytInstance.getCurrentTime()
   }
-  console.log('model.recording :', model.recording)
+  callRedRaw()
 }
 
-const playLoop = model => {
-  if (model.record.start < model.record.end) {
+const hasLoop = model => {
+  return model.record.start < model.record.end
+}
+
+const toggleLoop = model => {
+  if (!model.loopInterval) {
     var loopDurationMili = (model.record.end - model.record.start) * 1000
-    console.log('loopDurationMili :', loopDurationMili)
-    setInterval(() => model.ytInstance.seekTo(model.record.start), loopDurationMili)
-    // TODO: a bit more work on this
+    model.ytInstance.seekTo(model.record.start)
+    model.loopInterval = setInterval(() => model.ytInstance.seekTo(model.record.start), loopDurationMili)
+  } else {
+    clearInterval(model.loopInterval)
+    model.loopInterval = null
   }
-}
-
-const fastForward = model => {
-  model.ytInstance.seekTo(model.ytInstance.getCurrentTime() + 20, true)
+  callRedRaw()
 }
 
 const stepForward = model => {
   model.ytInstance.seekTo(model.ytInstance.getCurrentTime() + 5, true)
 }
-
 const stepBackward = model => {
   model.ytInstance.seekTo(model.ytInstance.getCurrentTime() - 5, true)
-}
-
-const fastBackward = model => {
-  model.ytInstance.seekTo(model.ytInstance.getCurrentTime() - 20, true)
 }
 
 const togglePlay = model => {
@@ -136,8 +134,13 @@ const togglePlay = model => {
   else model.ytInstance.playVideo()
 }
 
-const stop = model => {
-  model.ytInstance.stopVideo()
+const callRedRaw = () => {
+  document.dispatchEvent(new CustomEvent('discusting-non-functional-message'))
+}
+
+const deleteTrack = model => {
+  model.ytInstance.destroy()
+  document.dispatchEvent(new CustomEvent('delete-track', {'detail': model.key}))
 }
 
 module.exports = {
