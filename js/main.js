@@ -10,6 +10,7 @@ var patch = snabbdom.init([ // Init patch function with chosen modules
 var h = require('snabbdom/h').default // helper function for creating vnodes
 const Track = require('./track')
 
+var exampleVideos = ['UlPkNR83XOo', 'nDqP7kcr-sc', '2OyuMJMrCRw', 'XT6BMrbjvRs']
 const model = {
   tracks: [],
   nextId: 0,
@@ -27,7 +28,7 @@ var vnode = h('section#app.hero.is-large.is-light', [
 patch(document.getElementById('app'), vnode)
 
 global.onYouTubeIframeAPIReady = () => {
-  addTrack('76c0LIXn_P0')
+  view(model)
 }
 
 function addTrack (videoId) {
@@ -83,6 +84,17 @@ const view = model => {
       ])
     ]),
     h('section.section', [
+      h('div.container', [
+        h('div.field.is-grouped',
+        R.map(
+          videoId => h('p.control', [
+            h('a.button.is-primary', {on: {click: () => addTrack(videoId)}}, videoId)
+          ]),
+          exampleVideos)
+        )
+      ])
+    ]),
+    h('section.section', [
       h('div.container', R.map(t => Track.view(t), model.tracks))
     ])
   ]
@@ -91,7 +103,6 @@ const view = model => {
   vnode = newvNode // Need statefull FRP shit ?
 }
 
-var exampleVideos = ['76c0LIXn_P0', 'oIa4mUM9Rjw', 'qd2Dx6MIvb0', '2YjQlLg6bUM']
 const openRandom = () => {
   var rand = Math.floor(Math.random() * exampleVideos.length)
   addTrack(exampleVideos[rand])
