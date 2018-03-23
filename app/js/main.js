@@ -31,6 +31,12 @@ global.onYouTubeIframeAPIReady = () => {
   view(model)
 }
 
+document.addEventListener('discusting-non-functional-message', () => view(model))
+document.addEventListener('delete-track', e => {
+  model.tracks = R.reject(R.propEq('key', e.detail), model.tracks)
+  view(model)
+})
+
 function addTrack (videoId) {
   // TODO: make those updates with ramda ?
   model.tracks.push(Track.init(videoId, 'player' + model.nextId))
@@ -40,8 +46,8 @@ function addTrack (videoId) {
 
   var newTrack = R.last(model.tracks)
   newTrack.ytInstance = new YT.Player(newTrack.key, {
-    height: '96',
-    width: '96',
+    height: '100',
+    width: '400',
     videoId: videoId,
     events: {
       'onReady': onPlayerReady,
@@ -110,6 +116,9 @@ const openRandom = () => {
 
 // ytapi handles
 function onPlayerReady (event) {
+  var track = R.find(R.propEq('key', event.target.a.id), model.tracks)
+  console.log('track ready :', track)
+  event.target.setVolume(50)
   event.target.playVideo()
 }
 

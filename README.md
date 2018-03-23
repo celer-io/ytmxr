@@ -15,7 +15,8 @@ A webapp for playing multiple youtube videos at once while having every videos c
 - [X] Make Track component
 - [X] Find and itegrate silders UI ([like this](https://github.com/Wikiki/bulma-slider) ?)
 <!-- - [ ] Design UI (mockups ?) -->
-- [ ] Assign keys for play/pause on tracks
 - [X] Allow 'record' and looping
+- [ ] Integrate complete functional-reactive arch with flyd and union-types
+- [ ] Assign keys for play/pause on tracks
 - [ ] Assign keys seq for 'record' and looping
 - [ ] Add tracks from youtube search api
