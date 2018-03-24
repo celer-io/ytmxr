@@ -1,6 +1,9 @@
 /* global CustomEvent */
 // const R = require('ramda')
 const h = require('snabbdom/h').default
+const Type = require('union-type')
+
+// Model
 
 const init = (videoId, key) => ({
   key: key,
@@ -13,6 +16,12 @@ const init = (videoId, key) => ({
   },
   recording: false,
   loopInterval: null
+})
+
+// Actions
+
+const Actions = Type({
+
 })
 
 // h('i.fas.fa-x2.fa-play-circle')
