@@ -1,5 +1,5 @@
-/* global CustomEvent */
-// const R = require('ramda')
+/* global YT, CustomEvent */
+const R = require('ramda')
 const h = require('snabbdom/h').default
 
 const init = (videoId, key) => ({
@@ -19,7 +19,27 @@ const init = (videoId, key) => ({
 const view = model => h('div.box', {key: model.key}, [
   h('article.media', [
     h('div.media-left', [
-      h('figure#' + model.key)
+      h('figure#' + model.key, {
+        key: model.key,
+        hook: {
+          insert: () => {
+            // console.log('onPlayerReady :', onPlayerReady)
+            model.ytInstance = new YT.Player(model.key, {
+              height: '100',
+              width: '400',
+              videoId: model.videoId,
+              events: {
+                'onReady': onPlayerReady(model),
+                'onStateChange': onPlayerStateChange(model)
+              },
+              playerVars: {
+                modestbranding: 0,
+                rel: 0
+              }
+            })
+          }
+        }
+      })
     ]),
     h('div.media-content', [
       h('div.field.is-grouped.is-grouped-multiline', [
@@ -74,6 +94,21 @@ const view = model => h('div.box', {key: model.key}, [
   ])
 ])
 
+// ytapi handles
+const onPlayerReady = R.curry((model, event) => {
+  // var track = R.find(R.propEq('key', event.target.a.id), model.tracks)
+  // console.log('track ready :')
+  event.target.setVolume(50)
+  event.target.playVideo()
+})
+
+const onPlayerStateChange = R.curry((model, event) => {
+  // console.log('track.playerState :', track.playerState)
+  // var track = R.find(R.propEq('key', event.target.a.id), model.tracks)
+  model.playerState = event.data // Oulah grosse mutation !!!
+  callRedraw()
+})
+
 const getStateIcon = model => {
   switch (model.playerState) {
     case -1: //  – unstarted
@@ -103,7 +138,7 @@ const rec = model => {
     model.recording = false
     model.record.end = model.ytInstance.getCurrentTime()
   }
-  callRedRaw()
+  callRedraw()
 }
 
 const hasLoop = model => {
@@ -119,7 +154,7 @@ const toggleLoop = model => {
     clearInterval(model.loopInterval)
     model.loopInterval = null
   }
-  callRedRaw()
+  callRedraw()
 }
 
 const stepForward = model => {
@@ -134,8 +169,8 @@ const togglePlay = model => {
   else model.ytInstance.playVideo()
 }
 
-const callRedRaw = () => {
-  document.dispatchEvent(new CustomEvent('discusting-non-functional-message'))
+const callRedraw = () => {
+  document.dispatchEvent(new CustomEvent('call-redraw'))
 }
 
 const deleteTrack = model => {

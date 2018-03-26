@@ -1,6 +1,6 @@
 (function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}return e})()({1:[function(require,module,exports){
 (function (global){
-/* global YT */
+// /* global YT */
 'use strict';
 
 var snabbdom = require('snabbdom');
@@ -12,55 +12,46 @@ require('snabbdom/modules/style')['default'], // handles styling on elements wit
 require('snabbdom/modules/eventlisteners')['default'] // attaches event listeners
 ]);
 var h = require('snabbdom/h')['default']; // helper function for creating vnodes
+
+var MAX_PATCH_LOOP = 10;
+var PATCH_INTERVAL = 500; // ms
+
 var Track = require('./track');
 
 var exampleVideos = ['UlPkNR83XOo', 'nDqP7kcr-sc', '2OyuMJMrCRw', 'XT6BMrbjvRs'];
 var model = {
   tracks: [],
   nextId: 0,
-  newVideoId: ''
+  newVideoId: '',
+  dirty: true,
+  patchLoop: null,
+  patchLoopCount: 0
 };
 
 var vnode = h('section#app.hero.is-large.is-light', [h('div.hero-body', [h('div.container', [h('h1.title', 'YTMXR'), h('h2.subtitle', 'Youtube api not loaded yet...')])])]);
 patch(document.getElementById('app'), vnode);
 
 global.onYouTubeIframeAPIReady = function () {
-  view(model);
+  updateView(model);
 };
 
-document.addEventListener('discusting-non-functional-message', function () {
-  return view(model);
+document.addEventListener('call-redraw', function () {
+  updateView(model);
 });
+
 document.addEventListener('delete-track', function (e) {
   model.tracks = R.reject(R.propEq('key', e.detail), model.tracks);
-  view(model);
+  updateView(model);
 });
 
 function addTrack(videoId) {
-  // TODO: make those updates with ramda ?
   model.tracks.push(Track.init(videoId, 'player' + model.nextId));
   model.nextId++;
-
-  view(model);
-
-  var newTrack = R.last(model.tracks);
-  newTrack.ytInstance = new YT.Player(newTrack.key, {
-    height: '100',
-    width: '400',
-    videoId: videoId,
-    events: {
-      'onReady': onPlayerReady,
-      'onStateChange': onPlayerStateChange
-    },
-    playerVars: {
-      modestbranding: 0,
-      rel: 0
-    }
-  });
+  updateView(model);
 }
 
 var view = function view(model) {
-  var newvNode = h('div#app', [h('nav.navbar.is-light.is-fixed-top', [h('div.container', [h('div.navbar-brand', [h('div.navbar-item.title.is-4', 'YTMXR')]), h('div.navbar-menu.is-active', [h('div.navbar-left', [h('div.navbar-item', [h('div.field.is-grouped', [h('p.control.is-expanded', [h('input.input', {
+  return h('div#app', [h('nav.navbar.is-light.is-fixed-top', [h('div.container', [h('div.navbar-brand', [h('div.navbar-item.title.is-4', 'YTMXR')]), h('div.navbar-menu.is-active', [h('div.navbar-left', [h('div.navbar-item', [h('div.field.is-grouped', [h('p.control.is-expanded', [h('input.input', {
     props: { type: 'text', placeholder: 'Enter a Youtube Id', value: model.newVideoId },
     on: { input: function input(e) {
         model.newVideoId = e.target.value;
@@ -74,8 +65,26 @@ var view = function view(model) {
   }, exampleVideos))])]), h('section.section', [h('div.container', R.map(function (t) {
     return Track.view(t);
   }, model.tracks))])]);
-  patch(vnode, newvNode);
-  vnode = newvNode; // Need statefull FRP shit ?
+};
+
+var updateView = function updateView(model) {
+  if (model.patchLoop) {
+    model.dirty = true;
+    model.patchLoopCount = 0;
+  } else {
+    model.patchLoop = setInterval(function () {
+      if (model.dirty) {
+        var newvNode = view(model);
+        patch(vnode, newvNode);
+        vnode = newvNode;
+        model.dirty = false;
+      } else if (model.patchLoopCount++ >= MAX_PATCH_LOOP) {
+        model.patchLoopCount = 0;
+        clearInterval(model.patchLoop);
+        model.patchLoop = null;
+      }
+    }, PATCH_INTERVAL);
+  }
 };
 
 var openRandom = function openRandom() {
@@ -83,30 +92,12 @@ var openRandom = function openRandom() {
   addTrack(exampleVideos[rand]);
 };
 
-// ytapi handles
-function onPlayerReady(event) {
-  var track = R.find(R.propEq('key', event.target.a.id), model.tracks);
-  console.log('track ready :', track);
-  event.target.setVolume(50);
-  event.target.playVideo();
-}
-
-function onPlayerStateChange(event) {
-  var track = R.find(R.propEq('key', event.target.a.id), model.tracks);
-  track.playerState = event.data; // Oulah grosse mutation !!!
-  view(model);
-}
-
-// function stopVideo () {
-//   players[0].stopVideo()
-// }
-
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./track":2,"ramda":87,"snabbdom":329,"snabbdom/h":322,"snabbdom/modules/class":325,"snabbdom/modules/eventlisteners":326,"snabbdom/modules/props":327,"snabbdom/modules/style":328}],2:[function(require,module,exports){
-/* global CustomEvent */
-// const R = require('ramda')
+/* global YT, CustomEvent */
 'use strict';
 
+var R = require('ramda');
 var h = require('snabbdom/h')['default'];
 
 var init = function init(videoId, key) {
@@ -126,7 +117,27 @@ var init = function init(videoId, key) {
 
 // h('i.fas.fa-x2.fa-play-circle')
 var view = function view(model) {
-  return h('div.box', { key: model.key }, [h('article.media', [h('div.media-left', [h('figure#' + model.key)]), h('div.media-content', [h('div.field.is-grouped.is-grouped-multiline', [h('p.control', [h('button.button.is-large', { on: { click: function click() {
+  return h('div.box', { key: model.key }, [h('article.media', [h('div.media-left', [h('figure#' + model.key, {
+    key: model.key,
+    hook: {
+      insert: function insert() {
+        // console.log('onPlayerReady :', onPlayerReady)
+        model.ytInstance = new YT.Player(model.key, {
+          height: '100',
+          width: '400',
+          videoId: model.videoId,
+          events: {
+            'onReady': onPlayerReady(model),
+            'onStateChange': onPlayerStateChange(model)
+          },
+          playerVars: {
+            modestbranding: 0,
+            rel: 0
+          }
+        });
+      }
+    }
+  })]), h('div.media-content', [h('div.field.is-grouped.is-grouped-multiline', [h('p.control', [h('button.button.is-large', { on: { click: function click() {
         return stepBackward(model);
       } } }, [h('span.icon.is-medium', h('i.fas.fa-x2.fa-step-backward'))])]), h('p.control', [h('button.button.is-large', { on: { click: function click() {
         return togglePlay(model);
@@ -145,6 +156,21 @@ var view = function view(model) {
         return deleteTrack(model);
       } } })])])]);
 };
+
+// ytapi handles
+var onPlayerReady = R.curry(function (model, event) {
+  // var track = R.find(R.propEq('key', event.target.a.id), model.tracks)
+  // console.log('track ready :')
+  event.target.setVolume(50);
+  event.target.playVideo();
+});
+
+var onPlayerStateChange = R.curry(function (model, event) {
+  // console.log('track.playerState :', track.playerState)
+  // var track = R.find(R.propEq('key', event.target.a.id), model.tracks)
+  model.playerState = event.data; // Oulah grosse mutation !!!
+  callRedraw();
+});
 
 var getStateIcon = function getStateIcon(model) {
   switch (model.playerState) {
@@ -178,7 +204,7 @@ var rec = function rec(model) {
     model.recording = false;
     model.record.end = model.ytInstance.getCurrentTime();
   }
-  callRedRaw();
+  callRedraw();
 };
 
 var hasLoop = function hasLoop(model) {
@@ -196,7 +222,7 @@ var toggleLoop = function toggleLoop(model) {
     clearInterval(model.loopInterval);
     model.loopInterval = null;
   }
-  callRedRaw();
+  callRedraw();
 };
 
 var stepForward = function stepForward(model) {
@@ -210,8 +236,8 @@ var togglePlay = function togglePlay(model) {
   if (model.playerState === 1) model.ytInstance.pauseVideo();else model.ytInstance.playVideo();
 };
 
-var callRedRaw = function callRedRaw() {
-  document.dispatchEvent(new CustomEvent('discusting-non-functional-message'));
+var callRedraw = function callRedraw() {
+  document.dispatchEvent(new CustomEvent('call-redraw'));
 };
 
 var deleteTrack = function deleteTrack(model) {
@@ -224,7 +250,7 @@ module.exports = {
   view: view
 };
 
-},{"snabbdom/h":322}],3:[function(require,module,exports){
+},{"ramda":87,"snabbdom/h":322}],3:[function(require,module,exports){
 var always = /*#__PURE__*/require('./always');
 
 /**
