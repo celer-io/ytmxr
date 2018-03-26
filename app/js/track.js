@@ -23,7 +23,6 @@ const view = model => h('div.box', {key: model.key}, [
         key: model.key,
         hook: {
           insert: () => {
-            // console.log('onPlayerReady :', onPlayerReady)
             model.ytInstance = new YT.Player(model.key, {
               height: '100',
               width: '400',
@@ -96,15 +95,11 @@ const view = model => h('div.box', {key: model.key}, [
 
 // ytapi handles
 const onPlayerReady = R.curry((model, event) => {
-  // var track = R.find(R.propEq('key', event.target.a.id), model.tracks)
-  // console.log('track ready :')
   event.target.setVolume(50)
   event.target.playVideo()
 })
 
 const onPlayerStateChange = R.curry((model, event) => {
-  // console.log('track.playerState :', track.playerState)
-  // var track = R.find(R.propEq('key', event.target.a.id), model.tracks)
   model.playerState = event.data // Oulah grosse mutation !!!
   callRedraw()
 })

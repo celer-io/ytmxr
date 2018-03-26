@@ -14,7 +14,8 @@ const PATCH_INTERVAL = 500 // ms
 
 const Track = require('./track')
 
-var exampleVideos = ['UlPkNR83XOo', 'nDqP7kcr-sc', '2OyuMJMrCRw', 'XT6BMrbjvRs']
+const videoSamples = require('./videoSamples')
+
 const model = {
   tracks: [],
   nextId: 0,
@@ -84,12 +85,12 @@ h('div#app', [
   ]),
   h('section.section', [
     h('div.container', [
-      h('div.field.is-grouped',
+      h('div.field.is-grouped.is-grouped-multiline',
       R.map(
-        videoId => h('p.control', [
-          h('a.button.is-primary', {on: {click: () => addTrack(videoId)}}, videoId)
+        sample => h('p.control', [
+          h('a.button.is-primary', {on: {click: () => addTrack(sample.videoId)}}, sample.name)
         ]),
-        exampleVideos)
+        videoSamples)
       )
     ])
   ]),
@@ -99,8 +100,8 @@ h('div#app', [
 ])
 
 const updateView = model => {
+  model.dirty = true
   if (model.patchLoop) {
-    model.dirty = true
     model.patchLoopCount = 0
   } else {
     model.patchLoop = setInterval(() => {
@@ -119,6 +120,6 @@ const updateView = model => {
 }
 
 const openRandom = () => {
-  var rand = Math.floor(Math.random() * exampleVideos.length)
-  addTrack(exampleVideos[rand])
+  var rand = Math.floor(Math.random() * videoSamples.length)
+  addTrack(videoSamples[rand].videoId)
 }
