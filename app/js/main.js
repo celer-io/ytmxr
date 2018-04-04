@@ -15,25 +15,32 @@ const PATCH_INTERVAL = 500 // ms
 const Track = require('./track')
 
 const videoSamples = require('./videoSamples')
+var model, vDom
 
-const model = {
-  tracks: [],
-  nextId: 0,
-  newVideoId: '',
-  dirty: true,
-  patchLoop: null,
-  patchLoopCount: 0
-}
+const init = () => {
+  model = {
+    tracks: [],
+    nextId: 0,
+    newVideoId: '',
+    dirty: true,
+    patchLoop: null,
+    patchLoopCount: 0
+  }
 
-var vnode = h('section#app.hero.is-large.is-light', [
-  h('div.hero-body', [
-    h('div.container', [
-      h('h1.title', 'YTMXR'),
-      h('h2.subtitle', 'Youtube api not loaded yet...')
+  vDom = h('section#app.hero.is-fullheight.is-light', [
+    h('div.hero-body', [
+      h('div.container', {style: {
+        display: 'flex',
+        justifyContent: 'center'
+      }}, [
+        h('h1.title', 'YTMXR'),
+        h('h2.subtitle', 'Youtube api not loaded yet...')
+      ])
     ])
   ])
-])
-patch(document.getElementById('app'), vnode)
+
+  patch(document.getElementById('app'), vDom)
+}
 
 global.onYouTubeIframeAPIReady = () => {
   updateView(model)
@@ -48,14 +55,38 @@ document.addEventListener('delete-track', e => {
   updateView(model)
 })
 
-function addTrack (videoId) {
+const updateView = model => {
+  model.dirty = true
+  if (model.patchLoop) {
+    model.patchLoopCount = 0
+  } else {
+    model.patchLoop = setInterval(() => {
+      if (model.dirty) {
+        let newvDom = view(model)
+        patch(vDom, newvDom)
+        vDom = newvDom
+        model.dirty = false
+      } else if (model.patchLoopCount++ >= MAX_PATCH_LOOP) {
+        model.patchLoopCount = 0
+        clearInterval(model.patchLoop)
+        model.patchLoop = null
+      }
+    }, PATCH_INTERVAL)
+  }
+}
+
+const openRandom = () => {
+  var rand = Math.floor(Math.random() * videoSamples.length)
+  addTrack(videoSamples[rand].videoId)
+}
+
+const addTrack = videoId => {
   model.tracks.push(Track.init(videoId, 'player' + model.nextId))
   model.nextId++
   updateView(model)
 }
 
-const view = model =>
-h('div#app', [
+const view = model => h('div#app', [
   h('nav.navbar.is-light.is-fixed-top', [
     h('div.container', [
       h('div.navbar-brand', [
@@ -99,27 +130,4 @@ h('div#app', [
   ])
 ])
 
-const updateView = model => {
-  model.dirty = true
-  if (model.patchLoop) {
-    model.patchLoopCount = 0
-  } else {
-    model.patchLoop = setInterval(() => {
-      if (model.dirty) {
-        var newvNode = view(model)
-        patch(vnode, newvNode)
-        vnode = newvNode
-        model.dirty = false
-      } else if (model.patchLoopCount++ >= MAX_PATCH_LOOP) {
-        model.patchLoopCount = 0
-        clearInterval(model.patchLoop)
-        model.patchLoop = null
-      }
-    }, PATCH_INTERVAL)
-  }
-}
-
-const openRandom = () => {
-  var rand = Math.floor(Math.random() * videoSamples.length)
-  addTrack(videoSamples[rand].videoId)
-}
+init()

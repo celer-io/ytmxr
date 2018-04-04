@@ -19,18 +19,25 @@ var PATCH_INTERVAL = 500; // ms
 var Track = require('./track');
 
 var videoSamples = require('./videoSamples');
+var model, vDom;
 
-var model = {
-  tracks: [],
-  nextId: 0,
-  newVideoId: '',
-  dirty: true,
-  patchLoop: null,
-  patchLoopCount: 0
+var init = function init() {
+  model = {
+    tracks: [],
+    nextId: 0,
+    newVideoId: '',
+    dirty: true,
+    patchLoop: null,
+    patchLoopCount: 0
+  };
+
+  vDom = h('section#app.hero.is-fullheight.is-light', [h('div.hero-body', [h('div.container', { style: {
+      display: 'flex',
+      justifyContent: 'center'
+    } }, [h('h1.title', 'YTMXR'), h('h2.subtitle', 'Youtube api not loaded yet...')])])]);
+
+  patch(document.getElementById('app'), vDom);
 };
-
-var vnode = h('section#app.hero.is-large.is-light', [h('div.hero-body', [h('div.container', [h('h1.title', 'YTMXR'), h('h2.subtitle', 'Youtube api not loaded yet...')])])]);
-patch(document.getElementById('app'), vnode);
 
 global.onYouTubeIframeAPIReady = function () {
   updateView(model);
@@ -45,11 +52,36 @@ document.addEventListener('delete-track', function (e) {
   updateView(model);
 });
 
-function addTrack(videoId) {
+var updateView = function updateView(model) {
+  model.dirty = true;
+  if (model.patchLoop) {
+    model.patchLoopCount = 0;
+  } else {
+    model.patchLoop = setInterval(function () {
+      if (model.dirty) {
+        var newvDom = view(model);
+        patch(vDom, newvDom);
+        vDom = newvDom;
+        model.dirty = false;
+      } else if (model.patchLoopCount++ >= MAX_PATCH_LOOP) {
+        model.patchLoopCount = 0;
+        clearInterval(model.patchLoop);
+        model.patchLoop = null;
+      }
+    }, PATCH_INTERVAL);
+  }
+};
+
+var openRandom = function openRandom() {
+  var rand = Math.floor(Math.random() * videoSamples.length);
+  addTrack(videoSamples[rand].videoId);
+};
+
+var addTrack = function addTrack(videoId) {
   model.tracks.push(Track.init(videoId, 'player' + model.nextId));
   model.nextId++;
   updateView(model);
-}
+};
 
 var view = function view(model) {
   return h('div#app', [h('nav.navbar.is-light.is-fixed-top', [h('div.container', [h('div.navbar-brand', [h('div.navbar-item.title.is-4', 'YTMXR')]), h('div.navbar-menu.is-active', [h('div.navbar-left', [h('div.navbar-item', [h('div.field.is-grouped', [h('p.control.is-expanded', [h('input.input', {
@@ -68,30 +100,7 @@ var view = function view(model) {
   }, model.tracks))])]);
 };
 
-var updateView = function updateView(model) {
-  model.dirty = true;
-  if (model.patchLoop) {
-    model.patchLoopCount = 0;
-  } else {
-    model.patchLoop = setInterval(function () {
-      if (model.dirty) {
-        var newvNode = view(model);
-        patch(vnode, newvNode);
-        vnode = newvNode;
-        model.dirty = false;
-      } else if (model.patchLoopCount++ >= MAX_PATCH_LOOP) {
-        model.patchLoopCount = 0;
-        clearInterval(model.patchLoop);
-        model.patchLoop = null;
-      }
-    }, PATCH_INTERVAL);
-  }
-};
-
-var openRandom = function openRandom() {
-  var rand = Math.floor(Math.random() * videoSamples.length);
-  addTrack(videoSamples[rand].videoId);
-};
+init();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./track":2,"./videoSamples":3,"ramda":88,"snabbdom":330,"snabbdom/h":323,"snabbdom/modules/class":326,"snabbdom/modules/eventlisteners":327,"snabbdom/modules/props":328,"snabbdom/modules/style":329}],2:[function(require,module,exports){
@@ -116,26 +125,10 @@ var init = function init(videoId, key) {
   };
 };
 
-// h('i.fas.fa-x2.fa-play-circle')
 var view = function view(model) {
-  return h('div.box', { key: model.key }, [h('article.media', [h('div.media-left', [h('figure#' + model.key, {
-    key: model.key,
+  return h('div.box', { key: model.key + 'box' }, [h('article.media', [h('div.media-left', [h('figure#' + model.key, {
     hook: {
-      insert: function insert() {
-        model.ytInstance = new YT.Player(model.key, {
-          height: '100',
-          width: '400',
-          videoId: model.videoId,
-          events: {
-            'onReady': onPlayerReady(model),
-            'onStateChange': onPlayerStateChange(model)
-          },
-          playerVars: {
-            modestbranding: 0,
-            rel: 0
-          }
-        });
-      }
+      insert: createYtPlayer(model)
     }
   })]), h('div.media-content', [h('div.field.is-grouped.is-grouped-multiline', [h('p.control', [h('button.button.is-large', { on: { click: function click() {
         return stepBackward(model);
@@ -157,6 +150,22 @@ var view = function view(model) {
       } } })])])]);
 };
 
+var createYtPlayer = R.curry(function (model, vnode) {
+  model.ytInstance = new YT.Player(model.key, {
+    height: '100',
+    width: '400',
+    videoId: model.videoId,
+    events: {
+      'onReady': onPlayerReady(model),
+      'onStateChange': onPlayerStateChange(model)
+    },
+    playerVars: {
+      modestbranding: 0,
+      rel: 0
+    }
+  });
+});
+
 // ytapi handles
 var onPlayerReady = R.curry(function (model, event) {
   event.target.setVolume(50);
@@ -164,7 +173,7 @@ var onPlayerReady = R.curry(function (model, event) {
 });
 
 var onPlayerStateChange = R.curry(function (model, event) {
-  model.playerState = event.data; // Oulah grosse mutation !!!
+  model.playerState = event.data;
   callRedraw();
 });
 
@@ -258,6 +267,9 @@ module.exports = [{
 }, {
   name: 'Deleuze - Qu\'est-ce que l\'acte de création?',
   videoId: '2OyuMJMrCRw'
+}, {
+  name: 'Deleuze ASMR',
+  videoId: 'XJ8gvnPOqCk'
 }, {
   name: 'Akhenaton Une Impression Acapella',
   videoId: '-ETTCRznLSo'

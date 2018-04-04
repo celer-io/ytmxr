@@ -29,6 +29,7 @@ See demo [here](https://crucialhawg.github.io/ytmxr/)
 - [x] Make Track component
 - [x] Find and itegrate silders UI
 - [x] Allow 'record' and looping
+- [ ] Load fontawsome locally
 - [ ] Integrate complete functional-reactive arch with flyd and union-types <!-- yeah maybe... -->
 - [ ] Assign keys for play/pause on tracks
 - [ ] Assign keys seq for 'record' and looping

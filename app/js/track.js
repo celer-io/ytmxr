@@ -15,28 +15,12 @@ const init = (videoId, key) => ({
   loopInterval: null
 })
 
-// h('i.fas.fa-x2.fa-play-circle')
-const view = model => h('div.box', {key: model.key}, [
+const view = model => h('div.box', {key: model.key + 'box'}, [
   h('article.media', [
     h('div.media-left', [
       h('figure#' + model.key, {
-        key: model.key,
         hook: {
-          insert: () => {
-            model.ytInstance = new YT.Player(model.key, {
-              height: '100',
-              width: '400',
-              videoId: model.videoId,
-              events: {
-                'onReady': onPlayerReady(model),
-                'onStateChange': onPlayerStateChange(model)
-              },
-              playerVars: {
-                modestbranding: 0,
-                rel: 0
-              }
-            })
-          }
+          insert: createYtPlayer(model)
         }
       })
     ]),
@@ -93,6 +77,22 @@ const view = model => h('div.box', {key: model.key}, [
   ])
 ])
 
+const createYtPlayer = R.curry((model, vnode) => {
+  model.ytInstance = new YT.Player(model.key, {
+    height: '100',
+    width: '400',
+    videoId: model.videoId,
+    events: {
+      'onReady': onPlayerReady(model),
+      'onStateChange': onPlayerStateChange(model)
+    },
+    playerVars: {
+      modestbranding: 0,
+      rel: 0
+    }
+  })
+})
+
 // ytapi handles
 const onPlayerReady = R.curry((model, event) => {
   event.target.setVolume(50)
@@ -100,7 +100,7 @@ const onPlayerReady = R.curry((model, event) => {
 })
 
 const onPlayerStateChange = R.curry((model, event) => {
-  model.playerState = event.data // Oulah grosse mutation !!!
+  model.playerState = event.data
   callRedraw()
 })
 

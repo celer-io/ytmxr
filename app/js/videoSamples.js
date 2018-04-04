@@ -12,6 +12,10 @@ module.exports = [
     videoId: '2OyuMJMrCRw'
   },
   {
+    name: 'Deleuze ASMR',
+    videoId: 'XJ8gvnPOqCk'
+  },
+  {
     name: 'Akhenaton Une Impression Acapella',
     videoId: '-ETTCRznLSo'
   },
